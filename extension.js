@@ -131,22 +131,31 @@ function init()
 
 function enable()
 {
-    let panelActor = Main.panel;
-    if (typeof panelActor.get_children === 'undefined')
-    {
-        panelActor = panelActor.actor;
-    }
-    
-    panelActor.get_children().forEach(
-        function(actor)
+    let panelArray = global.dashToPanel ? global.dashToPanel.panels.map(pw => pw.panel || pw) : [Main.panel];
+    let iterLength = panelArray.length;
+    for(var index = 0; index < iterLength; index++){
+        let panelActor = panelArray[index];
+        if (typeof panelActor.get_children === 'undefined')
         {
-            signalConnections.push({
-                object: actor,
-                id: actor.connect('actor-added', _recursiveApply)
-            });
+            panelActor = panelActor.actor;
+        }
 
-            actor.get_children().forEach(_recursiveApply);
-        });
+        panelActor.get_children().forEach(
+            function(actor)
+            {
+                signalConnections.push({
+                    object: actor,
+                    id: actor.connect('actor-added', _recursiveApply)
+                });
+
+                actor.get_children().forEach(_recursiveApply);
+            });
+    }
+
+    if (global.dashToPanel && ! global.dashToPanel._removeDropdownArrowsPanelsCreatedId) {
+        global.dashToPanel._removeDropdownArrowsPanelsCreatedId = global.dashToPanel.connect('panels-created', () => enable());
+    }
+
 }
 
 function disable()
@@ -161,5 +170,10 @@ function disable()
     {
         let actor = dropdowns.pop();
         actor.show();
+    }
+
+    if (global.dashToPanel && global.dashToPanel._removeDropdownArrowsPanelsCreatedId) {
+        global.dashToPanel.disconnect(global.dashToPanel._removeDropdownArrowsPanelsCreatedId);
+        delete global.dashToPanel._removeDropdownArrowsPanelsCreatedId;
     }
 }
